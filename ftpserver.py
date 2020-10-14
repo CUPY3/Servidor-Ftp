@@ -1,4 +1,5 @@
 # Ftp server
+import crud,hashlib,time
 import pyperclip,webbrowser,pickle
 import os,subprocess
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -35,14 +36,13 @@ def ip4():
 	ip3=ip3[0].lstrip("   Direcci¢n IPv4. . . . . . . . . . . . . . :")
 	ip3.rstrip(" ")
 	ip.set(ip3)
-	ip2=io.open("ip","w")
-	ip2.write(str(ip.get()))
-	ip2.close()
+
+	return ip3
 	
 #---------------------------------------------------------------------------------------#
 
 def main():
-	global server,FTP_DIRECTORY
+	global server,FTP_DIRECTORY,status
 	authorizer = DummyAuthorizer()
 	if FTP_DIRECTORY=="":
 		FTP_DIRECTORY=os.getcwd()
@@ -58,18 +58,17 @@ def main():
 	handler.authorizer = authorizer
 	handler.banner = 'Servidor FTP Listo'
 	handler.passive_ports = range(60000, 65535)
-	
 	address = (ip.get(), port.get())
 	server = FTPServer(address, handler)
 
 	server.max_cons = 256
 	server.max_cons_per_ip = 5
-	savedir(FTP_DIRECTORY)
-	admin()
-	adminpass()
+	save_all()
+	
 	web=Label(text="ftp://"+IP.get()+":"+str(port.get())+"\n"+"En el directorio: "+FTP_DIRECTORY,relief="sunken",justify="left")
 	pyper=Button(text="Copiar",command=lambda:pyperclip.copy("ftp://"+IP.get()+":"+str(port.get())))
 	pyper2=Button(text="Abrir navegador",command=lambda:webbrowser.open("ftp://"+IP.get()+":"+str(port.get())))
+	
 	pyper.place(x=120,y=450)
 	pyper2.place(x=180,y=450)
 	web.place(x=120,y=400)
@@ -77,6 +76,7 @@ def main():
 	web.place_forget()
 	pyper.place_forget()
 	pyper2.place_forget()
+	status="off"
     
 
 def man():
@@ -116,18 +116,10 @@ root.title("FTP server")
 #DEFS
 def ftpstart():
 	global status,t,FTP_USER,FTP_PASSWORD,FTP_DIRECTORY
-	
+	print(1)
 	FTP_USER = user.get()
 	FTP_PASSWORD = pass2.get()
 	FTP_DIRECTORY = directorio.get()
-	
-	ip2=io.open("configs\ip","w")
-	ip2.write(str(ip.get()))
-	ip2.close()
-	
-	port2=io.open("configs\port","w")
-	port2.write(str(port.get()))
-	port2.close()
 	
 	ftp.config(text="Stop Ftp-server",command=ftpstop)
 	direct=directorio.get()
@@ -139,6 +131,7 @@ def ftpstart():
 		status="on"
 		t=threading.Thread(target=man)
 		t.start()
+		
 
 
 
@@ -150,37 +143,77 @@ def ftpstop():
 def show():
 	if test.get()=="on":
 		Pass.config(show="")
+		crud.connect("configs\cfg.db")
+		crud.update("configs","show","'"+test.get()+"'","id",1)
 	else:
-		Pass.config(show="*")	
-
-def conf():
-	cfg=io.open("configs\cfg","w")
-	cfg.write(test2.get())
-	cfg.close()
+		Pass.config(show="*")
+		crud.connect("configs\cfg.db")
+		crud.update("configs","show","'"+test.get()+"'","id",1)
+	crud.save()
+	crud.close()
 
 def change():
 	global annonimus
 	annonimus=test3.get()
 
-def savedir(dir2):
-	dirn=io.open("configs\dir","w")
-	dirn.write(dir2)
-	dirn.close()
-def admin():
-	use=io.open("configs\.User","w")
-	use.write(user.get())
-	use.close()
-def adminpass():
-	use=io.open("configs\pss","w")
-	use.write(pass2.get())
-	use.close()
+
 def selecdir():
 	dire=filedialog.askdirectory()
 	if dire=="":
 		directorio.set(os.getcwd())
+		dir()
 	else:
 		directorio.set(dire)
+		dir()
 
+def pass_auth_def():
+	if pass_auth.get()=="True":
+		pass2.set(crud.password(10))
+		save_all()
+
+def aut():
+	crud.connect("configs\cfg.db")
+	crud.update("configs","cfg_aut",test2.get(),"id",1)
+	crud.save()
+	crud.close()
+def ann():
+	crud.connect("configs\cfg.db")
+	crud.update("configs","cfg_ann",test3.get(),"id",1)
+	crud.save()
+	change()
+	crud.close()
+def ip_ch():
+	crud.connect("configs\cfg.db")
+	crud.update("configs","cfg_ip","'"+ip.get()+"'","id",1)
+	crud.save()
+	crud.close()
+def port_ch():
+	crud.connect("configs\cfg.db")
+	crud.update("configs","cfg_port",port.get(),"id",1)
+	crud.save()
+	crud.close()
+def dir():
+	crud.connect("configs\cfg.db")
+	crud.update("configs","cfg_dir","'"+directorio.get()+"'","id",1)
+	crud.save()
+	crud.close()
+def usr():
+	crud.connect("configs\cfg.db")
+	crud.update("configs","cfg_usr","'"+crud.encode(user.get())+"'","id",1)
+	crud.save()
+	crud.close()
+def pss():
+	crud.connect("configs\cfg.db")
+	crud.update("configs","cfg_pass","'"+crud.encode(pass2.get())+"'","id",1)
+	crud.save()
+	crud.close()
+
+def save_all():
+	ip_ch()
+	port_ch()
+	dir()
+	usr()
+	pss()
 
 #Buttons
 ftp=Button(text="Start Ftp-server",command=ftpstart,bg="#bde0e9")
@@ -199,16 +232,18 @@ test2=StringVar()
 test3=StringVar()
 test=StringVar()
 ipauth=StringVar()
+pass_auth=StringVar()
 #Variables
 annonimus=test3.get()
 portauth.set("off")
 
 #checkbuttons
 Label(text="__________________________________________________________________________",justify="left",bg="#bde0e9",fg="#000000").place(y=300,x=120)
-Checkbutton(text="Ejecutar server al iniciar la app",variable=test2,onvalue="on",offvalue="off",command=conf,bg="#bde0e9").place(y=340,x=200)
+Checkbutton(text="Ejecutar server al iniciar la app",variable=test2,onvalue="1",offvalue="0",command=aut,bg="#bde0e9").place(y=340,x=200)
+Checkbutton(text="Contraseña automática",variable=pass_auth,onvalue="True",offvalue="False",command=pass_auth_def,bg="#bde0e9").place(y=360,x=200)
 Checkbutton(text="Automatico",variable=ipauth,onvalue="on",offvalue="off",bg="#bde0e9").place(x=400,y=80)
 Checkbutton(text="show",variable=test,onvalue="on",offvalue="off",command=show,bg="#bde0e9").place(y=200,x=400)
-Checkbutton(text="Anonimo",variable=test3,onvalue="on",offvalue="off",command=change,bg="#bde0e9").place(y=160,x=400)
+Checkbutton(text="Anonimo",variable=test3,onvalue=1,offvalue=0,command=ann,bg="#bde0e9").place(y=160,x=400)
 
 #Menu
 menu=Menu(root)
@@ -228,7 +263,7 @@ ayuda.add_command(label="USR-PSS",command=lambda:subprocess.Popen(["python","hel
 menu.add_cascade(label="Ayuda",menu=ayuda)
 
 #Banner
-Banner=Label(text="Servidor FTP local V2.2",bg="#bee2b3")
+Banner=Label(text="Servidor FTP local V2.6",bg="#bee2b3")
 Banner.config(relief="sunken", bd=5, font=("Arial",20),fg="#323836")
 Banner.place(x=155)
 
@@ -251,71 +286,70 @@ Entry(textvariable=directorio,width=29,bg="#bde0e9").place(x=180,y=120)
 #Llamadas a funciones necesarias
 
 try:
-	cfg=io.open("configs\cfg","r")
+	os.mkdir("configs")
 except:
-	os.system("mkdir configs")
-	cfg=io.open("configs\cfg","w")
-	cfg.write("off")
-	cfg.close()
-	cfg=io.open("configs\cfg","r")
+	pass
+crud.connect("configs\cfg.db")
+
+try:
+	crud.runcode("""CREATE TABLE configs(
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	cfg_aut boolean,
+	cfg_ann boolean,
+	cfg_ip,
+	cfg_port INTEGER,
+	cfg_dir,
+	cfg_usr,
+	cfg_pass,
+	show
+	)""")
+	crud.create("configs","NULL,FALSE,TRUE,'"+ip4()+"',2121,"+"'"+os.getcwd()+"'"+",'"+crud.encode("admin")+"','"+crud.encode("admin")+"','off'")
+	crud.save()
+	read_db=crud.read("configs")
+	b64=read_db[0][6],read_db[0][7]
+	b64=crud.decode_list(b64)
+	print(read_db)
+	cfg=read_db[0][1]
+	test2.set(str(read_db[0][1]))
+	test3.set(str(read_db[0][2]))
+	ip2=read_db[0][3]
+	port2=read_db[0][4]
+	directorio.set(read_db[0][5])
+	
+	user.set(b64[0])
+	pass2.set(b64[1])
+	test.set(read_db[0][8])
+	show()
+	crud.close()
+except:
+	read_db=crud.read("configs")
+	b64=read_db[0][6],read_db[0][7]
+	b64=crud.decode_list(b64)
+	print(read_db)
+	cfg=read_db[0][1]
+	test2.set(str(read_db[0][1]))
+	test3.set(str(read_db[0][2]))
+	ip2=read_db[0][3]
+	port2=read_db[0][4]
+	directorio.set(read_db[0][5])
+	
+	user.set(b64[0])
+	pass2.set(b64[1])
+	test.set(read_db[0][8])
+	show()
+	crud.close()
 
 
-if cfg.read()=="on":
+
+if cfg==True:
 	ftpstart()
+	test2.set("1")
 else:
-	test2.set("off")
-cfg.close()
+	test2.set("0")
 
-try:
-	ip1=io.open("configs\ip","r")
-	ip2=ip1.read()
-	ip1.close()
-except:
-	ip1=io.open("configs\ip","w")
-	ip1.write("127.0.0.1")
-	ip1.close()
-	ip1=io.open("configs\ip","r")
-	ip2=ip1.read()
-	ip1.close()
-try:
-	port1=io.open("configs\port","r")
-	port2=port1.read()
-	port1.close()
-except:
-	port1=io.open("configs\port","w")
-	port1.write("2121")
-	port1.close()
-	port1=io.open("configs\port","r")
-	port2=port1.read()
-	port1.close()
-
-try:
-	dirn=io.open("configs\dir","r")
-	directorio.set(dirn.read())
-	dirn.close()
-except:
-	directorio.set(os.getcwd())
-try:
-	use=io.open('configs\.User',"r")
-	use2=use.read()
-	use.close
-	user.set(use2)
-except:
-	user.set("admin")
-	admin()
-try:
-	pass8=io.open("configs\pss","r")
-	pass2.set(pass8.read())
-	pass8.close()
-except:
-	pass2.set("admin")
-	adminpass()
-
-
-test.set("off")
+pass_auth.set("False")
 show()
 ipauth.set("off")
-test3.set("off")
 port.set(port2)
 ip.set(ip2)
 root.mainloop()

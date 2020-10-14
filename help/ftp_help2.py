@@ -6,7 +6,7 @@ root=tkinter.Tk()
 root.title("FTP-HELP USR-PSS")
 
 
-usr=tkinter.PhotoImage(file="help\user-password.png")
+usr=tkinter.PhotoImage(file="help\_user-password.png")
 
 root.geometry("520x250")
 tkinter.Label(text="Ftp Config Help N°3\nUser and Password",justify="center",bd=5,relief="sunken",font=("Arial",20)).place(x=120,y=0)
