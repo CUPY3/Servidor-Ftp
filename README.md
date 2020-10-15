@@ -1,7 +1,7 @@
 # <i><b>Servidor-Ftp</b></i>
 <i><b>Es un servidor ftp gráfico hecho en python para facilitar la creacion de servidores ftp</b></i>
 
-
+<img src="https://raw.githubusercontent.com/CUPY3/Servidor-Ftp/main/help/descargar.jpg">
 
 Está pensado para windows y linux
 
