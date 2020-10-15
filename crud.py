@@ -167,6 +167,7 @@ passw=""
 
 def password(len):
 	global passw
+	passw=""
 	for i in range(0,len):
 		passw=passw+alphabet[random.randint(1,40)]
 	return passw
