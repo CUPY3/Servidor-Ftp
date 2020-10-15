@@ -48,14 +48,9 @@ def ip4():
 #---------------------------------------------------------------------------------------#
 
 def main():
-	global server,FTP_DIRECTORY,status,users_count
-	if users_count==0:
-		if annonimus=="on":
-			authorizer.add_anonymous(FTP_DIRECTORY, perm='elr')
-		else:
-			authorizer.add_user(FTP_USER, FTP_PASSWORD, FTP_DIRECTORY, perm='elradfmw')
-	else:
-		users_count=0
+	global server,FTP_DIRECTORY,status,users_count,annonimus
+	annonimus=test3.get()
+	newuser()
 	handler = FTPHandler
 	handler.authorizer = authorizer
 	handler.banner = 'Servidor FTP Listo'
@@ -67,19 +62,19 @@ def main():
 	server.max_cons_per_ip = 5
 	save_all()
 	
-	web=Label(text="ftp://"+IP.get()+":"+str(port.get())+"\n"+"En el directorio: "+FTP_DIRECTORY,relief="sunken",justify="left")
-	pyper=Button(text="Copiar",command=lambda:pyperclip.copy("ftp://"+IP.get()+":"+str(port.get())))
-	pyper2=Button(text="Abrir navegador",command=lambda:webbrowser.open("ftp://"+IP.get()+":"+str(port.get())))
+	web=Label(text="ftp://"+IP.get()+":"+str(port.get())+"\n"+"En el directorio: "+FTP_DIRECTORY,relief="sunken",justify="left",bg="#bee2b3")
+	pyper=Button(text="Copiar",command=lambda:pyperclip.copy("ftp://"+IP.get()+":"+str(port.get())),bg="#bee2b3")
+	pyper2=Button(text="Abrir navegador",command=lambda:webbrowser.open("ftp://"+IP.get()+":"+str(port.get())),bg="#bee2b3")
 	
-	pyper.place(x=120,y=540)
-	pyper2.place(x=180,y=540)
-	web.place(x=120,y=490)
+	pyper.place(x=120,y=580)
+	pyper2.place(x=180,y=580)
+	web.place(x=120,y=530)
 	server.serve_forever()
 	web.place_forget()
 	pyper.place_forget()
 	pyper2.place_forget()
 	status="off"
-    
+
 
 def man():
 	try:
@@ -107,7 +102,7 @@ import threading,io
 status=""
 
 root=Tk()
-root.geometry("620x600")
+root.geometry("620x650")
 root.config(bg="#bde0e9")
 root.resizable(0,0)
 root.title("FTP server")
@@ -132,7 +127,13 @@ def ftpstart():
 		t.start()
 		
 
-
+def anonimo():
+	if test3.get()=="1":
+		Pass.config(show="X")
+		User.config(show="X")
+	else:
+		Pass.config(show="")
+		User.config(show="")
 def user_auth():
 	if usr_ath.get()=="1":
 		user.set(getpass.getuser())
@@ -142,14 +143,20 @@ def ftpstop():
 	server.close_all()
 	authorizer_def()
 def show():
-	if test.get()=="on":
+	crud.connect("configs\cfg.db")
+	if test.get()=="on" and test3.get()=="0":
 		Pass.config(show="")
-		crud.connect("configs\cfg.db")
+		crud.update("configs","show","'"+test.get()+"'","id",1)
+	elif test.get()=="off" and test3.get()=="0":
+		Pass.config(show="*")
 		crud.update("configs","show","'"+test.get()+"'","id",1)
 	else:
-		Pass.config(show="*")
-		crud.connect("configs\cfg.db")
-		crud.update("configs","show","'"+test.get()+"'","id",1)
+		if test.get()=="on":
+			test.set=="off"
+			print(1)
+		elif test.get()=="off":
+			test.set("on")
+			print(2)
 	crud.save()
 	crud.close()
 def change():
@@ -175,6 +182,7 @@ def aut():
 	crud.save()
 	crud.close()
 def ann():
+	anonimo()
 	crud.connect("configs\cfg.db")
 	crud.update("configs","cfg_ann",test3.get(),"id",1)
 	crud.save()
@@ -224,6 +232,7 @@ def save_all():
 	pass_auth_def_save()
 	ip_port_auth()
 	ip_ch()
+	usr_ath_def()
 	port_ch()
 	dir()
 	usr()
@@ -252,13 +261,32 @@ def newuser():
 		messagebox.showwarning("Usuario denegado","El usuario "+user.get()+" ya existe")
 	users_count=users_count+1
 	save_all()
-	
+def reset():
+	ip.set(ip4())
+	port.set(2121)
+	directorio.set(os.getcwd())
+	user.set("admin")
+	pass2.set("admin")
+	perm.set("elradfmw")
+	test2.set("0")
+	usr_ath.set(0)
+	pass_auth.set(0)
+	ipauth.set(1)
+	test.set(1)
+	test3.set(0)
+	save_all
+	pass
 #Buttons
 ftp=Button(text="Iniciar Servidor",command=ftpstart,bg="#bde0e9")
 ftp.config(relief="groove",bd=10)
 ftp.place(x=250,y=250)
 Button(text="Seleccionar Directorio",command=lambda:selecdir(),bg="#bee2b3").place(x=120,y=420)
+
+Button(text="Guardar cambios",command=lambda:save_all(),bg="#bee2b3").place(x=120,y=450)
+
 Button(text="Añadir usuario",command=lambda:newuser(),bg="#bee2b3").place(x=320,y=420)
+
+Button(text="Resetear cambios",command=lambda:reset(),bg="#bee2b3").place(x=320,y=450)
 
 #StringVar and IntVar
 ip=StringVar()
@@ -285,7 +313,7 @@ Checkbutton(text="Contraseña automática",variable=pass_auth,onvalue=1,offvalue
 Checkbutton(text="ip-port Automatico",variable=ipauth,onvalue=1,offvalue=0,bg="#bde0e9",command=ip_port_auth).place(x=320,y=330)
 Checkbutton(text="Mostrar contraseña",variable=test,onvalue="on",offvalue="off",command=show,bg="#bde0e9").place(y=360,x=320)
 Checkbutton(text="Anonimo",variable=test3,onvalue=1,offvalue=0,command=ann,bg="#bde0e9").place(y=330,x=120)
-Label(text="__________________________________________________________________________",justify="left",bg="#bde0e9",fg="#000000").place(y=450,x=120)
+Label(text="__________________________________________________________________________",justify="left",bg="#bde0e9",fg="#000000").place(y=480,x=120)
 
 #Menu
 menu=Menu(root)
@@ -302,6 +330,7 @@ ayuda=Menu(menu,tearoff=0)
 ayuda.add_command(label="IP",command=lambda:subprocess.Popen(["python","help\Ftp_help.py"]))
 ayuda.add_command(label="Directorio",command=lambda:subprocess.Popen(["python","help\Ftp_help1.py"]))
 ayuda.add_command(label="USR-PSS",command=lambda:subprocess.Popen(["python","help\Ftp_help2.py"]))
+ayuda.add_command(label="Permisos",command=lambda:subprocess.Popen(["python","help\Ftp_help3.py"]))
 menu.add_cascade(label="Ayuda",menu=ayuda)
 
 #Banner
@@ -319,10 +348,14 @@ Label(text="User",bg="#bde0e9").place(x=120,y=160)
 Label(text="Password",bg="#bde0e9").place(x=120,y=200)
 
 IP=Entry(textvariable=ip,bg="#bde0e9")
-Entry(textvariable=directorio,width=29,bg="#bde0e9",).place(x=210,y=120)
-Entry(textvariable=port,width=5,bg="#bde0e9").place(x=350,y=80)
-Entry(textvariable=user,width=15,bg="#bde0e9",justify="center").place(x=210,y=160)
-Entry(textvariable=perm,width=10,bg="#bde0e9",justify="center").place(x=325,y=160)
+Dir=Entry(textvariable=directorio,width=29,bg="#bde0e9",)
+Dir.place(x=210,y=120)
+Port=Entry(textvariable=port,width=5,bg="#bde0e9")
+Port.place(x=350,y=80)
+User=Entry(textvariable=user,width=15,bg="#bde0e9",justify="center")
+User.place(x=210,y=160)
+Perm=Entry(textvariable=perm,width=10,bg="#bde0e9",justify="center")
+Perm.place(x=325,y=160)
 Pass=Entry(textvariable=pass2,width=29,justify="center")
 
 IP.place(x=210,y=80)
@@ -407,6 +440,7 @@ if cfg==True:
 else:
 	test2.set("0")
 
+anonimo()
 perm.set("elradfmw")
 show()
 port.set(port2)
